@@ -1,0 +1,53 @@
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
+
+let
+
+  cfg = config.services.opentabletdriver;
+
+in
+{
+  meta.maintainers = with lib; [
+    {
+      name = "Ezequiel Escobar";
+      github = "agdral";
+      githubId = 51279889;
+      email = "ezequiel.escobar@proton.me";
+    }
+  ];
+
+  options = {
+    services.opentabletdriver = {
+      enable = lib.mkEnableOption "Open Tablet Driver service";
+
+      package = lib.mkPackageOption pkgs "opentabletdriver" { };
+    };
+  };
+
+  config = lib.mkIf cfg.enable {
+    home.packages = [ cfg.package ];
+
+    systemd.user.services.opentabletdriver = {
+      Install.WantedBy = [ "graphical-session.target" ];
+
+      Unit = {
+        Description = "Open Tablet Driver";
+        After = ["graphical-session.target"];
+        Requisite = ["graphical-session.target"];
+      };
+
+      Service = {
+        Type = "simple";
+        ExecStart = "${pkgs.opentabletdriver}/bin/otd-daemon";
+        ExecReload = "kill -SIGUSR2 $MAINPID";
+        Restart = "on-failure";
+        RestartSec = 3;
+        TimeoutStopSec = 10;
+      };
+    };
+  };
+}
